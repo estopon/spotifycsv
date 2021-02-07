@@ -15,6 +15,8 @@
 	<description>Join csv&apos;s by country in one global csv</description>
 	<properties>
 		<java.version>1.8</java.version>
+		<se.michaelthelin.spotify.version>6.5.1</se.michaelthelin.spotify.version>
+		<opencsv.version>5.3</opencsv.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -37,6 +39,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>se.michaelthelin.spotify</groupId>
+			<artifactId>spotify-web-api-java</artifactId>
+			<version>${se.michaelthelin.spotify.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>${opencsv.version}</version>
 		</dependency>
 	</dependencies>
 
