@@ -25,9 +25,11 @@ import com.spotifycharts.spotifycsv.model.ChartElement;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import com.wrapper.spotify.model_objects.specification.AudioFeatures;
+import com.wrapper.spotify.model_objects.specification.Artist;
+import com.wrapper.spotify.model_objects.specification.Track;
 import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
-import com.wrapper.spotify.requests.data.tracks.GetAudioFeaturesForTrackRequest;
+import com.wrapper.spotify.requests.data.artists.GetArtistRequest;
+import com.wrapper.spotify.requests.data.tracks.GetTrackRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -108,8 +110,14 @@ public class SpotifyCSVService {
 					int index=trackID.lastIndexOf('/');
 					trackID = trackID.substring(index+1);
 					
-					GetAudioFeaturesForTrackRequest getAudioFeaturesForTrackRequest = spotifyApi.getAudioFeaturesForTrack(trackID).build();
-					AudioFeatures audioFeatures = getAudioFeaturesForTrackRequest.execute();
+					// GetAudioFeaturesForTrackRequest getAudioFeaturesForTrackRequest = spotifyApi.getAudioFeaturesForTrack(trackID).build();
+					// AudioFeatures audioFeatures = getAudioFeaturesForTrackRequest.execute();
+					
+					GetTrackRequest getTrackRequest = spotifyApi.getTrack(trackID).build();
+					Track track = getTrackRequest.execute();
+					
+					GetArtistRequest getArtistRequest = spotifyApi.getArtist(track.getArtists()[0].getId()).build();
+					Artist artist = getArtistRequest.execute();
 					
 					chart.setCountry(country);
 					chart.setDate(dateStr);
