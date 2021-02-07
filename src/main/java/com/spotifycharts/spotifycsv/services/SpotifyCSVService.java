@@ -15,12 +15,19 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.exceptions.CsvException;
 import com.spotifycharts.spotifycsv.model.ChartElement;
+import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
+import com.wrapper.spotify.model_objects.specification.AudioFeatures;
+import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
+import com.wrapper.spotify.requests.data.tracks.GetAudioFeaturesForTrackRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +44,31 @@ public class SpotifyCSVService {
 	@Value("${files.folder}")
 	private String filesDirectory;
 	
-	public void processCSV () throws IOException, CsvException {
+	@Value("${clientID}")
+	private String clientID;
+	
+	@Value("${clientSecret}")
+	private String clientSecret;
+	
+	public void processCSV () throws IOException, CsvException, ParseException, SpotifyWebApiException {
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 		ZoneId defaultZoneId = ZoneId.systemDefault();
 		List<ChartElement> completeList = new ArrayList<ChartElement>();
+		
+		SpotifyApi spotifyApi = new SpotifyApi.Builder()
+			    .setClientId(clientID)
+			    .setClientSecret(clientSecret)
+			    .build();
+		
+		ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
+			    .build();
+		
+		ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+		
+		spotifyApi.setAccessToken(clientCredentials.getAccessToken());
+		
+		log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
 		
 		for (String country: countryList) {
 			
@@ -76,6 +103,14 @@ public class SpotifyCSVService {
 		                .parse();
 				
 				for (ChartElement chart: charts) {
+					
+					String trackID = chart.getUrl();
+					int index=trackID.lastIndexOf('/');
+					trackID = trackID.substring(index+1);
+					
+					GetAudioFeaturesForTrackRequest getAudioFeaturesForTrackRequest = spotifyApi.getAudioFeaturesForTrack(trackID).build();
+					AudioFeatures audioFeatures = getAudioFeaturesForTrackRequest.execute();
+					
 					chart.setCountry(country);
 					chart.setDate(dateStr);
 				}
