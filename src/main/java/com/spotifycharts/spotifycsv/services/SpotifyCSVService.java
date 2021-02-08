@@ -146,7 +146,7 @@ public class SpotifyCSVService {
 					chart.setCountry(country);
 					chart.setDate(dateStr);
 					
-					Thread.sleep(1000);
+					Thread.sleep(500);
 				}
 				
 				completeList.addAll(charts);
@@ -209,6 +209,8 @@ public class SpotifyCSVService {
 			}
 			
 			beanToCsv.write(listaFinal);
+			
+			writer.close();
 			
 			log.debug("Proceso finalizado");
 		}
