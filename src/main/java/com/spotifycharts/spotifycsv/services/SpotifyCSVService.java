@@ -3,6 +3,7 @@ package com.spotifycharts.spotifycsv.services;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -14,14 +15,20 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.hc.core5.http.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.opencsv.CSVWriter;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvException;
 import com.spotifycharts.spotifycsv.model.ChartElement;
+import com.spotifycharts.spotifycsv.model.Genre;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
@@ -53,7 +60,13 @@ public class SpotifyCSVService {
 	@Value("${clientSecret}")
 	private String clientSecret;
 	
-	public void processCSV () throws IOException, CsvException, ParseException, SpotifyWebApiException {
+	@Value("${numDays}")
+	private String numDays;
+	
+	@Value("${output.filename}")
+	private String outputFilename;
+	
+	public void processCSV () throws IOException, CsvException, ParseException, SpotifyWebApiException, InterruptedException {
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 		ZoneId defaultZoneId = ZoneId.systemDefault();
@@ -77,8 +90,8 @@ public class SpotifyCSVService {
 			
 			String urlStr = chartsUrl.replace("$1", country);
 			
-			LocalDate startDate = LocalDate.now().minusDays(30);
-			LocalDate endDate = LocalDate.now();
+			LocalDate startDate = LocalDate.now().minusDays(Long.parseLong(numDays)+1);
+			LocalDate endDate = LocalDate.now().minusDays(1);
 			
 			while (startDate.isBefore(endDate)) {
 				
@@ -121,13 +134,17 @@ public class SpotifyCSVService {
 						GetArtistRequest getArtistRequest = spotifyApi.getArtist(artistS.getId()).build();
 						Artist artist = getArtistRequest.execute();
 						
+						ArrayList<String> genres = new ArrayList<String>(); 
 						for (String genre: artist.getGenres()) {
-							chart.getGenres().add(genre);
+							genres.add(genre);
 						}
+						chart.setGenres(genres);
 					}
 					
 					chart.setCountry(country);
 					chart.setDate(dateStr);
+					
+					Thread.sleep(1000);
 				}
 				
 				completeList.addAll(charts);
@@ -138,9 +155,60 @@ public class SpotifyCSVService {
 				Files.delete(filePath);
 				
 				startDate = startDate.plusDays(1);
+			}			
+			
+		}
+		
+		if (!completeList.isEmpty()) {
+			List<Genre> genreList = new ArrayList<Genre>();
+			for (ChartElement chart: completeList) {
+				for (String genreStr: chart.getGenres()) {
+					Genre genre = new Genre();
+					genre.setGenre(genreStr);
+					genre.setCountry(chart.getCountry());
+					genre.setStreams(chart.getStreams());
+					genreList.add(genre);
+				}				
 			}
 			
+			Map<String, Map<String, Integer>> genreMap = genreList.stream().collect(
+				Collectors.groupingBy(
+						Genre::getGenre,
+						Collectors.groupingBy(
+								Genre::getCountry,
+								Collectors.mapping(
+										Genre::getStreams,
+										Collectors.reducing(0, a -> a, (a1, a2) -> a1 + a2)
+								)
+						)				
+				)	
+			);
 			
+			Writer writer = Files.newBufferedWriter(Paths.get(filesDirectory+outputFilename));
+			StatefulBeanToCsv<Genre> beanToCsv = new StatefulBeanToCsvBuilder(writer)
+                    .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
+                    .build();
+			
+			List<Genre> listaFinal = new ArrayList<Genre>();
+			
+			for (Map.Entry<String, Map<String, Integer>> entry: genreMap.entrySet()) {
+				if (entry != null) {
+					for (Map.Entry<String, Integer> value: entry.getValue().entrySet()) {
+						if (value != null) {
+							log.error(entry.getKey()+" - "+value.getKey()+" - "+value.getValue());
+							Genre listElement = new Genre();
+							listElement.setGenre(entry.getKey());
+							listElement.setCountry(value.getKey());
+							listElement.setStreams(value.getValue());
+							listaFinal.add(listElement);							
+						}
+					}
+				}
+			}
+			
+			beanToCsv.write(listaFinal);
+			
+			log.debug("Proceso finalizado");
 		}
 		
 	}
