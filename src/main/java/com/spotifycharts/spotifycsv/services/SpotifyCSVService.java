@@ -120,6 +120,8 @@ public class SpotifyCSVService {
 				
 				for (ChartElement chart: charts) {
 					
+					System.out.println(country + " - " + dateStr + " - " + chart.getPosition() + "/" + charts.size());
+					
 					String trackID = chart.getUrl();
 					int index=trackID.lastIndexOf('/');
 					trackID = trackID.substring(index+1);
@@ -185,7 +187,7 @@ public class SpotifyCSVService {
 			);
 			
 			Writer writer = Files.newBufferedWriter(Paths.get(filesDirectory+outputFilename));
-			StatefulBeanToCsv<Genre> beanToCsv = new StatefulBeanToCsvBuilder(writer)
+			StatefulBeanToCsv<Genre> beanToCsv = new StatefulBeanToCsvBuilder<Genre>(writer)
                     .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
                     .build();
 			
@@ -195,7 +197,7 @@ public class SpotifyCSVService {
 				if (entry != null) {
 					for (Map.Entry<String, Integer> value: entry.getValue().entrySet()) {
 						if (value != null) {
-							log.error(entry.getKey()+" - "+value.getKey()+" - "+value.getValue());
+							// System.out.println(entry.getKey()+" - "+value.getKey()+" - "+value.getValue());
 							Genre listElement = new Genre();
 							listElement.setGenre(entry.getKey());
 							listElement.setCountry(value.getKey());
