@@ -1,5 +1,7 @@
 package com.spotifycharts.spotifycsv.model;
 
+import java.util.ArrayList;
+
 import com.opencsv.bean.CsvBindByPosition;
 
 import lombok.Data;
@@ -25,5 +27,7 @@ public class ChartElement {
 	private String country;
 	
 	private String date;
+	
+	private ArrayList<String> genres;
 
 }

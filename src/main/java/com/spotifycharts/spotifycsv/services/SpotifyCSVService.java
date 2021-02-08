@@ -26,6 +26,7 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import com.wrapper.spotify.model_objects.specification.Artist;
+import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 import com.wrapper.spotify.requests.data.artists.GetArtistRequest;
@@ -116,8 +117,14 @@ public class SpotifyCSVService {
 					GetTrackRequest getTrackRequest = spotifyApi.getTrack(trackID).build();
 					Track track = getTrackRequest.execute();
 					
-					GetArtistRequest getArtistRequest = spotifyApi.getArtist(track.getArtists()[0].getId()).build();
-					Artist artist = getArtistRequest.execute();
+					for (ArtistSimplified artistS: track.getArtists()) {
+						GetArtistRequest getArtistRequest = spotifyApi.getArtist(artistS.getId()).build();
+						Artist artist = getArtistRequest.execute();
+						
+						for (String genre: artist.getGenres()) {
+							chart.getGenres().add(genre);
+						}
+					}
 					
 					chart.setCountry(country);
 					chart.setDate(dateStr);
