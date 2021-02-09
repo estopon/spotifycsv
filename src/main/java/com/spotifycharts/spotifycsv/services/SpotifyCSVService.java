@@ -74,26 +74,26 @@ public class SpotifyCSVService {
 		
 		for (String country: countryList) {
 			
-			SpotifyApi spotifyApi = new SpotifyApi.Builder()
-				    .setClientId(clientID)
-				    .setClientSecret(clientSecret)
-				    .build();
-			
-			ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
-				    .build();
-			
-			ClientCredentials clientCredentials = clientCredentialsRequest.execute();
-			
-			spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-			
-			log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
-			
 			String urlStr = chartsUrl.replace("$1", country);
 			
 			LocalDate startDate = LocalDate.now().minusDays(Long.parseLong(numDays)+1);
 			LocalDate endDate = LocalDate.now().minusDays(1);
 			
 			while (startDate.isBefore(endDate)) {
+				
+				SpotifyApi spotifyApi = new SpotifyApi.Builder()
+					    .setClientId(clientID)
+					    .setClientSecret(clientSecret)
+					    .build();
+				
+				ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
+					    .build();
+				
+				ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+				
+				spotifyApi.setAccessToken(clientCredentials.getAccessToken());
+				
+				log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
 				
 				String dateStr = formatter.format(Date.from(startDate.atStartOfDay(defaultZoneId).toInstant()));
 				
@@ -146,7 +146,7 @@ public class SpotifyCSVService {
 					chart.setCountry(country);
 					chart.setDate(dateStr);
 					
-					Thread.sleep(500);
+					Thread.sleep(100);
 				}
 				
 				completeList.addAll(charts);
