@@ -72,21 +72,21 @@ public class SpotifyCSVService {
 		ZoneId defaultZoneId = ZoneId.systemDefault();
 		List<ChartElement> completeList = new ArrayList<ChartElement>();
 		
-		SpotifyApi spotifyApi = new SpotifyApi.Builder()
-			    .setClientId(clientID)
-			    .setClientSecret(clientSecret)
-			    .build();
-		
-		ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
-			    .build();
-		
-		ClientCredentials clientCredentials = clientCredentialsRequest.execute();
-		
-		spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-		
-		log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
-		
 		for (String country: countryList) {
+			
+			SpotifyApi spotifyApi = new SpotifyApi.Builder()
+				    .setClientId(clientID)
+				    .setClientSecret(clientSecret)
+				    .build();
+			
+			ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
+				    .build();
+			
+			ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+			
+			spotifyApi.setAccessToken(clientCredentials.getAccessToken());
+			
+			log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
 			
 			String urlStr = chartsUrl.replace("$1", country);
 			
@@ -169,19 +169,84 @@ public class SpotifyCSVService {
 					genre.setGenre(genreStr);
 					genre.setCountry(chart.getCountry());
 					genre.setStreams(chart.getStreams());
+					
+					String mainGenre;
+					
+					if (genreStr.toLowerCase().equals("metal") ||
+						genreStr.toLowerCase().equals("metalcore") ||
+						genreStr.toLowerCase().indexOf(" metal") != -1 ||
+						genreStr.toLowerCase().indexOf(" metalcore") != -1) {
+						mainGenre = "metal";
+					} else if (genreStr.toLowerCase().equals("rock") ||
+						       genreStr.toLowerCase().indexOf(" rock") != -1) {
+						mainGenre = "rock";
+					} else if (genreStr.toLowerCase().equals("pop") ||
+							   genreStr.toLowerCase().equals("electropop") ||
+							   genreStr.toLowerCase().equals("synthpop") ||
+							   genreStr.toLowerCase().equals("scandipop") ||
+							   genreStr.toLowerCase().indexOf("-pop") != -1 ||
+							   genreStr.toLowerCase().indexOf(" pop") != -1 ||
+							   genreStr.toLowerCase().indexOf("pop ") != -1) {
+						mainGenre = "pop";
+					} else if (genreStr.toLowerCase().indexOf("indie") != -1) {
+						mainGenre = "indie";
+					} else if (genreStr.toLowerCase().indexOf("hip hop") != -1) {
+						mainGenre = "hip hop";
+					} else if (genreStr.toLowerCase().equals("rap") ||
+							   genreStr.toLowerCase().indexOf(" rap") != -1 ||
+							   genreStr.toLowerCase().indexOf("rap ") != -1) {
+						mainGenre = "rap";
+					} else if (genreStr.toLowerCase().equals("r&b") ||
+							   genreStr.toLowerCase().indexOf(" r&b") != -1 ||
+							   genreStr.toLowerCase().indexOf("r&b ") != -1) {
+						mainGenre = "r&b";
+					} else if (genreStr.toLowerCase().equals("trap") ||
+							   genreStr.toLowerCase().indexOf(" trap") != -1 ||
+							   genreStr.toLowerCase().indexOf("trap ") != -1) {
+						mainGenre = "trap";
+					} else if (genreStr.toLowerCase().equals("dance") ||
+							   genreStr.toLowerCase().indexOf(" dance") != -1 ||
+							   genreStr.toLowerCase().indexOf("dance ") != -1) {
+						mainGenre = "dance";
+					} else if (genreStr.toLowerCase().equals("house") ||
+							   genreStr.toLowerCase().indexOf(" house") != -1 ||
+							   genreStr.toLowerCase().indexOf("house ") != -1) {
+						mainGenre = "house";
+					} else if (genreStr.toLowerCase().indexOf("grunge") != -1) {
+						mainGenre = "grunge";
+					} else if (genreStr.toLowerCase().equals("country") ||
+							   genreStr.toLowerCase().indexOf(" country") != -1 ||
+							   genreStr.toLowerCase().indexOf("country ") != -1) {
+						mainGenre = "country";
+					} else if (genreStr.toLowerCase().equals("latin") ||
+							   genreStr.toLowerCase().indexOf(" latin") != -1 ||
+							   genreStr.toLowerCase().indexOf("latin ") != -1) {
+						mainGenre = "latin";
+					} else if (genreStr.toLowerCase().equals("reggaeton") ||
+							   genreStr.toLowerCase().indexOf(" reggaeton") != -1 ||
+							   genreStr.toLowerCase().indexOf("reggaeton ") != -1) {
+						mainGenre = "reggaeton";
+					} else {
+						mainGenre = "others";
+					}
+					genre.setMainGenre(mainGenre);
+					
 					genreList.add(genre);
 				}				
 			}
 			
-			Map<String, Map<String, Integer>> genreMap = genreList.stream().collect(
+			Map<String, Map<String, Map<String, Integer>>> genreMap = genreList.stream().collect(
 				Collectors.groupingBy(
 						Genre::getGenre,
 						Collectors.groupingBy(
 								Genre::getCountry,
-								Collectors.mapping(
-										Genre::getStreams,
-										Collectors.reducing(0, a -> a, (a1, a2) -> a1 + a2)
-								)
+								Collectors.groupingBy(
+										Genre::getMainGenre,
+										Collectors.mapping(
+												Genre::getStreams,
+												Collectors.reducing(0, a -> a, (a1, a2) -> a1 + a2)
+										)
+								)						
 						)				
 				)	
 			);
@@ -193,17 +258,22 @@ public class SpotifyCSVService {
 			
 			List<Genre> listaFinal = new ArrayList<Genre>();
 			
-			for (Map.Entry<String, Map<String, Integer>> entry: genreMap.entrySet()) {
+			for (Map.Entry<String, Map<String, Map<String, Integer>>> entry: genreMap.entrySet()) {
 				if (entry != null) {
-					for (Map.Entry<String, Integer> value: entry.getValue().entrySet()) {
-						if (value != null) {
-							// System.out.println(entry.getKey()+" - "+value.getKey()+" - "+value.getValue());
-							Genre listElement = new Genre();
-							listElement.setGenre(entry.getKey());
-							listElement.setCountry(value.getKey());
-							listElement.setStreams(value.getValue());
-							listaFinal.add(listElement);							
-						}
+					for (Map.Entry<String, Map<String, Integer>> entry2: entry.getValue().entrySet()) {
+						if (entry2 != null) {
+							for (Map.Entry<String, Integer> value: entry2.getValue().entrySet()) {
+								if (value != null) {
+									// System.out.println(entry.getKey()+" - "+value.getKey()+" - "+value.getValue());
+									Genre listElement = new Genre();
+									listElement.setGenre(entry.getKey());
+									listElement.setCountry(entry2.getKey());
+									listElement.setMainGenre(value.getKey());									
+									listElement.setStreams(value.getValue());
+									listaFinal.add(listElement);							
+								}
+							}
+						}				
 					}
 				}
 			}

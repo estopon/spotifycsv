@@ -11,4 +11,6 @@ public class Genre {
 	
 	private int streams;
 	
+	private String mainGenre;
+	
 }
