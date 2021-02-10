@@ -81,82 +81,95 @@ public class SpotifyCSVService {
 			
 			while (startDate.isBefore(endDate)) {
 				
-				SpotifyApi spotifyApi = new SpotifyApi.Builder()
-					    .setClientId(clientID)
-					    .setClientSecret(clientSecret)
-					    .build();
-				
-				ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
-					    .build();
-				
-				ClientCredentials clientCredentials = clientCredentialsRequest.execute();
-				
-				spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-				
-				log.debug("Token Expires in: " + clientCredentials.getExpiresIn());
-				
 				String dateStr = formatter.format(Date.from(startDate.atStartOfDay(defaultZoneId).toInstant()));
 				
 				urlStr = urlStr.replace("$2", dateStr);
 				
-				URL url = new URL(urlStr);
-				URLConnection conn = url.openConnection();
-				conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36");
-				
-				InputStream in = conn.getInputStream();
-				
-				String fileName = filesDirectory + country + "_" + dateStr + ".csv";
-				
-				Files.copy(in, Paths.get(fileName));	
-				
-				FileReader fileReader = new FileReader(fileName);
-				CsvToBeanBuilder csvReader = new CsvToBeanBuilder(fileReader);
-				
-				List<ChartElement> charts = csvReader
-						.withSkipLines(2)
-		                .withType(ChartElement.class)
-		                .build()
-		                .parse();
-				
-				for (ChartElement chart: charts) {
+				try {
+					URL url = new URL(urlStr);
+					URLConnection conn = url.openConnection();
+					conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36");
 					
-					System.out.println(country + " - " + dateStr + " - " + chart.getPosition() + "/" + charts.size());
+					InputStream in = conn.getInputStream();
 					
-					String trackID = chart.getUrl();
-					int index=trackID.lastIndexOf('/');
-					trackID = trackID.substring(index+1);
+					String fileName = filesDirectory + country + "_" + dateStr + ".csv";
 					
-					// GetAudioFeaturesForTrackRequest getAudioFeaturesForTrackRequest = spotifyApi.getAudioFeaturesForTrack(trackID).build();
-					// AudioFeatures audioFeatures = getAudioFeaturesForTrackRequest.execute();
+					Files.copy(in, Paths.get(fileName));	
 					
-					GetTrackRequest getTrackRequest = spotifyApi.getTrack(trackID).build();
-					Track track = getTrackRequest.execute();
+					FileReader fileReader = new FileReader(fileName);
+					CsvToBeanBuilder csvReader = new CsvToBeanBuilder(fileReader);
 					
-					for (ArtistSimplified artistS: track.getArtists()) {
-						GetArtistRequest getArtistRequest = spotifyApi.getArtist(artistS.getId()).build();
-						Artist artist = getArtistRequest.execute();
+					List<ChartElement> charts = csvReader
+							.withSkipLines(2)
+			                .withType(ChartElement.class)
+			                .build()
+			                .parse();
+					
+					SpotifyApi spotifyApi = new SpotifyApi.Builder()
+						    .setClientId(clientID)
+						    .setClientSecret(clientSecret)
+						    .build();
+					
+					ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials()
+						    .build();
+					
+					ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+					
+					spotifyApi.setAccessToken(clientCredentials.getAccessToken());
+					
+					System.out.println("Token "+clientCredentials.getAccessToken()+ " expires in: " + clientCredentials.getExpiresIn());
+					
+					for (ChartElement chart: charts) {
 						
-						ArrayList<String> genres = new ArrayList<String>(); 
-						for (String genre: artist.getGenres()) {
-							genres.add(genre);
+						System.out.println(country + " - " + dateStr + " - " + chart.getPosition() + "/" + charts.size());
+						
+						String trackID = chart.getUrl();
+						int index=trackID.lastIndexOf('/');
+						trackID = trackID.substring(index+1);
+						
+						// GetAudioFeaturesForTrackRequest getAudioFeaturesForTrackRequest = spotifyApi.getAudioFeaturesForTrack(trackID).build();
+						// AudioFeatures audioFeatures = getAudioFeaturesForTrackRequest.execute();
+						
+						chart.setCountry(country);
+						chart.setDate(dateStr);
+						
+						try {
+							GetTrackRequest getTrackRequest = spotifyApi.getTrack(trackID).build();
+							Track track = getTrackRequest.execute();
+							
+							for (ArtistSimplified artistS: track.getArtists()) {
+								GetArtistRequest getArtistRequest = spotifyApi.getArtist(artistS.getId()).build();
+								Artist artist = getArtistRequest.execute();
+								
+								ArrayList<String> genres = new ArrayList<String>(); 
+								for (String genre: artist.getGenres()) {
+									genres.add(genre);
+								}
+								chart.setGenres(genres);
+							}
+							
+							Thread.sleep(100);
+						} catch (Exception e) {
+							log.error("--> Exception charts loop: "+e.getMessage(), e);
+							ArrayList<String> genres = new ArrayList<String>();
+							genres.add("error");
+							chart.setGenres(genres);
 						}
-						chart.setGenres(genres);
+						
 					}
 					
-					chart.setCountry(country);
-					chart.setDate(dateStr);
+					completeList.addAll(charts);
 					
-					Thread.sleep(100);
+					fileReader.close();
+					
+					Path filePath = Paths.get(fileName);
+					Files.delete(filePath);	
+				
+				} catch (Exception e) {
+					log.error("--> Exception "+country+"-"+dateStr+": "+e.getMessage(), e);
+				} finally {
+					startDate = startDate.plusDays(1);					
 				}
-				
-				completeList.addAll(charts);
-				
-				fileReader.close();
-				
-				Path filePath = Paths.get(fileName);
-				Files.delete(filePath);
-				
-				startDate = startDate.plusDays(1);
 			}			
 			
 		}
