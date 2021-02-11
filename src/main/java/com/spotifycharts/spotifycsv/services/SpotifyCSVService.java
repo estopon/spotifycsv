@@ -195,7 +195,8 @@ public class SpotifyCSVService {
 							genreStr.toLowerCase().indexOf(" metalcore") != -1) {
 							mainGenre = "metal";
 						} else if (genreStr.toLowerCase().equals("rock") ||
-							       genreStr.toLowerCase().indexOf(" rock") != -1) {
+							       genreStr.toLowerCase().indexOf(" rock") != -1 ||
+							       genreStr.toLowerCase().indexOf("rock ") != -1) {
 							mainGenre = "rock";
 						} else if (genreStr.toLowerCase().equals("pop") ||
 								   genreStr.toLowerCase().equals("electropop") ||
@@ -205,6 +206,11 @@ public class SpotifyCSVService {
 								   genreStr.toLowerCase().indexOf(" pop") != -1 ||
 								   genreStr.toLowerCase().indexOf("pop ") != -1) {
 							mainGenre = "pop";
+						} else if (genreStr.toLowerCase().equals("punk") ||
+								   genreStr.toLowerCase().indexOf("-punk") != -1 ||
+								   genreStr.toLowerCase().indexOf(" punk") != -1 ||
+								   genreStr.toLowerCase().indexOf("punk ") != -1) {
+							mainGenre = "punk";
 						} else if (genreStr.toLowerCase().indexOf("indie") != -1) {
 							mainGenre = "indie";
 						} else if (genreStr.toLowerCase().indexOf("hip hop") != -1) {
@@ -225,6 +231,10 @@ public class SpotifyCSVService {
 								   genreStr.toLowerCase().indexOf(" dance") != -1 ||
 								   genreStr.toLowerCase().indexOf("dance ") != -1) {
 							mainGenre = "dance";
+						} else if (genreStr.toLowerCase().equals("electronica") ||
+							       genreStr.toLowerCase().indexOf(" electronica") != -1 ||
+							       genreStr.toLowerCase().indexOf("electronica ") != -1) {
+							mainGenre = "electronica";
 						} else if (genreStr.toLowerCase().equals("house") ||
 								   genreStr.toLowerCase().indexOf(" house") != -1 ||
 								   genreStr.toLowerCase().indexOf("house ") != -1) {
